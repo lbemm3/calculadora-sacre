@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calculadora SACRE</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #0d1117;
+      --paper: #f5f2eb;
+      --gold: #c9a84c;
+      --gold-lt: #f0e4c0;
+      --red: #c0392b;
+      --green: #1a6b3c;
+      --blue: #1a3a6b;
+      --muted: #7a7060;
+      --border: #d8d0bc;
+    }
+    * { box-sizing: border-box; }
+    body {
+      background: var(--paper);
+      font-family: 'DM Sans', sans-serif;
+      color: var(--ink);
+      background-image:
+        radial-gradient(circle at 10% 20%, rgba(201,168,76,0.06) 0%, transparent 50%),
+        radial-gradient(circle at 90% 80%, rgba(26,58,107,0.05) 0%, transparent 50%);
+    }
+    h1, h2, h3, .syne { font-family: 'Syne', sans-serif; }
+    .mono { font-family: 'DM Mono', monospace; }
+
+    /* Ledger line background for table headers */
+    .ledger-header {
+      background: var(--ink);
+      color: var(--gold);
+      font-family: 'Syne', sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* Tab style */
+    .tab-btn {
+      font-family: 'Syne', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 10px 18px;
+      border: 2px solid transparent;
+      border-bottom: none;
+      transition: all 0.2s;
+      white-space: nowrap;
+      background: transparent;
+      cursor: pointer;
+      color: var(--muted);
+      border-radius: 6px 6px 0 0;
+    }
+    .tab-btn:hover { color: var(--ink); background: rgba(0,0,0,0.04); }
+    .tab-btn.active {
+      color: var(--ink);
+      background: white;
+      border-color: var(--border);
+      border-bottom-color: white;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Card */
+    .card {
+      background: white;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+    }
+    .card-gold {
+      background: linear-gradient(135deg, #fdf8ed 0%, #f5edcc 100%);
+      border-color: var(--gold);
+    }
+    .card-red {
+      background: linear-gradient(135deg, #fdf5f5 0%, #fde8e8 100%);
+      border-color: #e8b5b0;
+    }
+    .card-green {
+      background: linear-gradient(135deg, #f0faf4 0%, #d8f2e4 100%);
+      border-color: #9dd6b9;
+    }
+    .card-blue {
+      background: linear-gradient(135deg, #f0f4fa 0%, #d8e4f4 100%);
+      border-color: #9dbfe0;
+    }
+    .card-violet {
+      background: linear-gradient(135deg, #f5f0fa 0%, #e8d8f4 100%);
+      border-color: #c0a0d8;
+    }
+
+    /* Input */
+    .field-input {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-family: 'DM Mono', monospace;
+      font-size: 14px;
+      background: #fdfcf8;
+      color: var(--ink);
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+    .field-input:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(201,168,76,0.15);
+    }
+    .field-input.highlight {
+      border-color: var(--gold);
+      background: #fdf8ed;
+    }
+    .field-label {
+      display: block;
+      font-family: 'Syne', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    /* Buttons */
+    .btn-primary {
+      width: 100%;
+      padding: 14px;
+      background: var(--ink);
+      color: var(--gold);
+      font-family: 'Syne', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary:hover { background: #1e2733; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,0,0,0.18); }
+    .btn-primary.green { background: var(--green); color: white; }
+    .btn-primary.green:hover { background: #145530; }
+    .btn-primary.violet { background: #5b2d8c; color: white; }
+    .btn-primary.violet:hover { background: #4a2474; }
+
+    .btn-export {
+      padding: 9px 18px;
+      font-family: 'Syne', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-export.csv { background: var(--green); color: white; }
+    .btn-export.csv:hover { background: #145530; }
+    .btn-export.pdf { background: var(--red); color: white; }
+    .btn-export.pdf:hover { background: #9c2b21; }
+
+    /* Table */
+    .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .data-table th { padding: 10px 12px; text-align: right; }
+    .data-table th:first-child { text-align: left; }
+    .data-table td { padding: 9px 12px; text-align: right; border-bottom: 1px solid #f0ece0; }
+    .data-table td:first-child { text-align: left; font-family: 'DM Mono', monospace; }
+    .data-table tbody tr:hover { background: #fdf8ed; }
+    .data-table .row-total { background: #0d1117; color: #c9a84c; font-weight: 700; }
+    .data-table .row-recalc { background: #fdf5e0; }
+    .data-table .row-extra { background: #f5f0fa; }
+
+    /* Notice boxes */
+    .notice {
+      padding: 14px 18px;
+      border-radius: 8px;
+      border-left: 4px solid;
+      font-size: 13.5px;
+      line-height: 1.6;
+    }
+    .notice.warning { background: #fdf8ed; border-color: var(--gold); color: #6b5820; }
+    .notice.danger  { background: #fdf0ef; border-color: var(--red);  color: #6b2820; }
+    .notice.info    { background: #f0f4fb; border-color: var(--blue); color: #1a3060; }
+    .notice.success { background: #f0faf4; border-color: var(--green); color: #1a4b2c; }
+    .notice.violet  { background: #f8f0fd; border-color: #7c3aed; color: #4c1d8a; }
+
+    /* Stat card */
+    .stat-card {
+      padding: 20px;
+      border-radius: 12px;
+      border: 1.5px solid;
+    }
+    .stat-label {
+      font-family: 'Syne', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .stat-value {
+      font-family: 'DM Mono', monospace;
+      font-size: 22px;
+      font-weight: 500;
+      line-height: 1.2;
+    }
+    .stat-sub {
+      font-size: 11px;
+      margin-top: 4px;
+      opacity: 0.7;
+      font-family: 'DM Mono', monospace;
+    }
+
+    /* Badge */
+    .badge {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 20px;
+      font-size: 10px;
+      font-weight: 700;
+      font-family: 'Syne', sans-serif;
+      letter-spacing: 0.04em;
+      vertical-align: middle;
+      margin-left: 4px;
+    }
+    .badge-amber { background: #f59e0b; color: white; }
+    .badge-violet { background: #7c3aed; color: white; }
+
+    /* Divider */
+    .ornament {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--gold);
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      margin: 8px 0;
+    }
+    .ornament::before, .ornament::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    }
+
+    /* Event row for amort múltiplas */
+    .event-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 12px;
+      background: #fdfcf8;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+    }
+    .event-row .flex-1 { flex: 1; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f0ece0; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 3px; }
+
+    /* Stagger animation */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-up { animation: fadeUp 0.35s ease both; }
+    .fade-up-2 { animation: fadeUp 0.35s 0.06s ease both; }
+    .fade-up-3 { animation: fadeUp 0.35s 0.12s ease both; }
+    .fade-up-4 { animation: fadeUp 0.35s 0.18s ease both; }
+
+    /* Logo mark */
+    .logomark {
+      width: 44px; height: 44px;
+      background: var(--ink);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 16px;
+      color: var(--gold);
+      letter-spacing: -0.5px;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════════════════════════════
+const fmtBRL = v =>
+  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// NÚCLEO: SIMULAÇÃO SACRE
+// ═══════════════════════════════════════════════════════════════════════════════
+function simularSACRE(saldoInicial, prazo, taxaMensal, tr, admin, seg, amortExtras = []) {
+  let saldo = saldoInicial;
+  let mesesRestantes = prazo;
+  let amortizacao = saldoInicial / prazo;
+  let totalPago = 0, totalJuros = 0, totalCorrecao = 0;
+  const prestacoes = [], parcelas = [], saldos = [];
+
+  for (let mes = 1; mes <= prazo; mes++) {
+    if ((mes - 1) % 12 === 0 && mes > 1) amortizacao = saldo / mesesRestantes;
+    const extraObj = amortExtras.find(a => a.mes === mes);
+    if (extraObj && saldo > 0.01) {
+      saldo = Math.max(0, saldo - extraObj.valor);
+      if (mesesRestantes > 0) amortizacao = saldo / mesesRestantes;
+    }
+    if (saldo <= 0.01) break;
+
+    const juros = saldo * taxaMensal;
+    const prestacao = amortizacao + juros + admin + seg;
+    saldo -= amortizacao;
+    const correcao = saldo * tr;
+    saldo = saldo * (1 + tr);
+    mesesRestantes--;
+
+    totalPago    += prestacao;
+    totalJuros   += juros;
+    totalCorrecao += correcao;
+    prestacoes.push(prestacao);
+    saldos.push(Math.max(saldo, 0));
+
+    if (mes <= 12 || mes === prazo || extraObj) {
+      parcelas.push({
+        mes, amortizacao, juros, correcao, prestacao,
+        saldo: Math.max(saldo, 0),
+        recalculo: (mes - 1) % 12 === 0 && mes > 1,
+        extra: extraObj ? extraObj.valor : 0,
+      });
+    }
+  }
+  return { totalPago, totalJuros, totalCorrecao, prestacoes, parcelas, saldos };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// EXPORTAÇÕES
+// ═══════════════════════════════════════════════════════════════════════════════
+function exportarCSV(parcelas, nome) {
+  const cab = ['Mês','Amortização','Juros','Correção TR','Prestação','Saldo'];
+  const lin = parcelas.map(p => [
+    p.mes, p.amortizacao.toFixed(2), p.juros.toFixed(2),
+    p.correcao.toFixed(2), p.prestacao.toFixed(2), p.saldo.toFixed(2),
+  ]);
+  const csv = [cab, ...lin].map(r => r.join(';')).join('\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = nome + '.csv'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportarPDF(parcelas, titulo, resumo = []) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape' });
+  doc.setFontSize(13);
+  doc.text(titulo, 14, 15);
+  doc.setFontSize(9);
+  resumo.forEach((l, i) => doc.text(l, 14, 23 + i * 6));
+  doc.autoTable({
+    startY: 23 + resumo.length * 6 + 4,
+    head: [['Mês','Amortização (R$)','Juros (R$)','Correção TR (R$)','Prestação (R$)','Saldo (R$)']],
+    body: parcelas.map(p => [
+      p.mes,
+      p.amortizacao.toFixed(2), p.juros.toFixed(2),
+      p.correcao.toFixed(2),    p.prestacao.toFixed(2), p.saldo.toFixed(2),
+    ]),
+    styles: { fontSize: 8 },
+    headStyles: { fillColor: [13, 17, 23] },
+    alternateRowStyles: { fillColor: [250, 248, 242] },
+  });
+  doc.save(titulo.replace(/\s+/g,'_') + '.pdf');
+}
+
+function BotoesExport({ parcelas, nome, resumo }) {
+  return (
+    <div style={{ display:'flex', gap:'10px', justifyContent:'flex-end', marginTop:'16px' }}>
+      <button className="btn-export csv" onClick={() => exportarCSV(parcelas, nome)}>⬇ CSV</button>
+      <button className="btn-export pdf" onClick={() => exportarPDF(parcelas, nome, resumo)}>⬇ PDF</button>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CAMPO
+// ═══════════════════════════════════════════════════════════════════════════════
+function Campo({ label, val, set, step, hint, wide, destaque }) {
+  return (
+    <div style={wide ? { gridColumn: 'span 2' } : {}}>
+      <label className="field-label">{label}</label>
+      <input
+        type="number"
+        step={step || 'any'}
+        value={val}
+        onChange={e => set(Number(e.target.value))}
+        className={`field-input${destaque ? ' highlight' : ''}`}
+      />
+      {hint && <p style={{ fontSize:'11px', color:'var(--muted)', marginTop:'4px', fontFamily:"'DM Mono', monospace" }}>{hint}</p>}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// GRÁFICO
+// ═══════════════════════════════════════════════════════════════════════════════
+function GraficoSaldo({ saldosSem, saldosCom, labelCom }) {
+  const canvasRef = useRef(null);
+  const chartRef  = useRef(null);
+
+  useEffect(() => {
+    if (!canvasRef.current || !saldosSem.length) return;
+    if (chartRef.current) chartRef.current.destroy();
+    const n = Math.max(saldosSem.length, saldosCom.length);
+    const labels = Array.from({ length: n }, (_, i) => i + 1);
+    chartRef.current = new Chart(canvasRef.current, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          { label: 'Sem amortização', data: saldosSem, borderColor: '#c0392b', backgroundColor: 'rgba(192,57,43,0.06)', fill: true, tension: 0.3, pointRadius: 0, borderWidth: 2.5 },
+          { label: labelCom || 'Com amortização', data: saldosCom, borderColor: '#1a6b3c', backgroundColor: 'rgba(26,107,60,0.07)', fill: true, tension: 0.3, pointRadius: 0, borderWidth: 2.5 },
+        ],
+      },
+      options: {
+        responsive: true,
+        interaction: { intersect: false, mode: 'index' },
+        plugins: {
+          legend: { position: 'top', labels: { font: { family: 'DM Mono', size: 11 }, color: '#0d1117' } },
+          tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fmtBRL(c.parsed.y)}` }, bodyFont: { family: 'DM Mono' } },
+        },
+        scales: {
+          x: { title: { display: true, text: 'Mês', font: { family: 'Syne', size: 11 }, color: '#7a7060' }, grid: { color: '#f0ece0' } },
+          y: { title: { display: true, text: 'Saldo devedor', font: { family: 'Syne', size: 11 }, color: '#7a7060' }, ticks: { callback: v => fmtBRL(v), font: { family: 'DM Mono', size: 10 } }, grid: { color: '#f0ece0' } },
+        },
+      },
+    });
+    return () => { if (chartRef.current) chartRef.current.destroy(); };
+  }, [saldosSem, saldosCom]);
+
+  return (
+    <div className="card fade-up-3">
+      <h3 className="syne" style={{ fontWeight:700, marginBottom:16, fontSize:14, letterSpacing:'0.04em', textTransform:'uppercase', color:'var(--ink)' }}>📈 Evolução do Saldo Devedor</h3>
+      <canvas ref={canvasRef} />
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CENÁRIOS TR
+// ═══════════════════════════════════════════════════════════════════════════════
+function CenariosTR({ saldo, prazo, taxaMensal, admin, seg, valorAmortizacao, modo, prestacaoVar }) {
+  const novoSaldo = saldo - valorAmortizacao;
+  const cenarios = [
+    { label: 'Otimista — TR = 0%',       tr: 0,           cls: 'text-green-800 bg-green-50' },
+    { label: 'Histórica — TR = 0,1256%', tr: 0.001255747, cls: 'text-blue-800 bg-blue-50' },
+    { label: 'Pessimista — TR = 0,5%',   tr: 0.005,       cls: 'text-red-800 bg-red-50' },
+  ];
+  return (
+    <div className="card fade-up-4">
+      <h3 className="syne" style={{ fontWeight:700, fontSize:14, letterSpacing:'0.04em', textTransform:'uppercase', marginBottom:4 }}>🌡 Sensibilidade à TR</h3>
+      <p style={{ fontSize:12, color:'var(--muted)', marginBottom:16 }}>Como a economia varia conforme a TR futura</p>
+      <div style={{ overflowX:'auto' }}>
+        <table className="data-table">
+          <thead>
+            <tr className="ledger-header">
+              <th style={{ textAlign:'left', padding:'10px 12px' }}>Cenário</th>
+              <th style={{ padding:'10px 12px' }}>Economia total</th>
+              <th style={{ padding:'10px 12px' }}>Redução juros</th>
+              <th style={{ padding:'10px 12px' }}>Redução TR</th>
+              <th style={{ padding:'10px 12px' }}>{modo === 'prazo' ? 'Novo prazo' : 'Nova 1ª parcela'}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {cenarios.map(c => {
+              const sem = simularSACRE(saldo, prazo, taxaMensal, c.tr, admin, seg);
+              let com, nPrazo, nPmt;
+              if (modo === 'prazo') {
+                nPrazo = prazo;
+                for (let n = prazo; n > 0; n--) {
+                  if (novoSaldo / n + novoSaldo * taxaMensal >= prestacaoVar) { nPrazo = n; break; }
+                }
+                com = simularSACRE(novoSaldo, nPrazo, taxaMensal, c.tr, admin, seg);
+              } else {
+                com  = simularSACRE(novoSaldo, prazo, taxaMensal, c.tr, admin, seg);
+                nPrazo = prazo;
+                nPmt = novoSaldo / prazo + novoSaldo * taxaMensal + admin + seg;
+              }
+              const econ = sem.totalPago - (com.totalPago + valorAmortizacao);
+              return (
+                <tr key={c.label} style={{ borderBottom:'1px solid #f0ece0' }}>
+                  <td><span style={{ fontFamily:"'Syne', sans-serif", fontSize:11, fontWeight:700 }}>{c.label}</span></td>
+                  <td style={{ fontFamily:"'DM Mono', monospace", fontWeight:600 }}>{fmtBRL(econ)}</td>
+                  <td style={{ fontFamily:"'DM Mono', monospace" }}>{fmtBRL(sem.totalJuros - com.totalJuros)}</td>
+                  <td style={{ fontFamily:"'DM Mono', monospace" }}>{fmtBRL(sem.totalCorrecao - com.totalCorrecao)}</td>
+                  <td style={{ fontFamily:"'DM Mono', monospace", fontWeight:600 }}>{modo === 'prazo' ? `${nPrazo} meses` : fmtBRL(nPmt)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// RESULTADO AMORTIZAÇÃO
+// ═══════════════════════════════════════════════════════════════════════════════
+function ResultadoAmortizacao({ r, modo, saldo, prazo, taxaMensal, admin, seg, valorAmortizacao, prestacaoVar, tr }) {
+  const isPrazo = modo === 'prazo';
+  const nomePDF = isPrazo ? 'SACRE_Reducao_Prazo' : 'SACRE_Reducao_Parcela';
+  const resumoPDF = [
+    `Novo saldo: ${fmtBRL(r.novoSaldo)}    Prazo: ${r.melhorPrazo} meses`,
+    `1ª prestação: ${fmtBRL(r.melhorPrestacao1)}    Economia: ${fmtBRL(r.economia)}`,
+  ];
+  return (
+    <div style={{ marginTop:28, display:'flex', flexDirection:'column', gap:20 }}>
+      {/* Cards topo */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))', gap:14 }} className="fade-up">
+        <div className="stat-card card-green">
+          <div className="stat-label" style={{ color:'var(--green)' }}>💰 Novo Saldo</div>
+          <div className="stat-value" style={{ color:'#0f3d22' }}>{fmtBRL(r.novoSaldo)}</div>
+          <div className="stat-sub" style={{ color:'var(--green)' }}>−{fmtBRL(r.valorAmortizacao)}</div>
+        </div>
+        <div className="stat-card card-blue">
+          <div className="stat-label" style={{ color:'var(--blue)' }}>{isPrazo ? '📅 Novo Prazo' : '📅 Prazo'}</div>
+          <div className="stat-value" style={{ color:'#0f1f3d' }}>{r.melhorPrazo} <span style={{ fontSize:13 }}>meses</span></div>
+          {isPrazo && r.mesesReduzidos > 0 && <div className="stat-sub" style={{ color:'var(--blue)' }}>−{r.mesesReduzidos} meses ({(r.mesesReduzidos/12).toFixed(1)} anos)</div>}
+        </div>
+        <div className={`stat-card ${isPrazo ? 'card-gold' : 'card-green'}`}>
+          <div className="stat-label" style={{ color: isPrazo ? '#8a6018' : 'var(--green)' }}>
+            {isPrazo ? '📈 1ª Prestação' : '📉 1ª Prestação'}
+          </div>
+          <div className="stat-value" style={{ color: isPrazo ? '#4d340a' : '#0f3d22' }}>{fmtBRL(r.melhorPrestacao1)}</div>
+          <div className="stat-sub" style={{ color: isPrazo ? '#8a6018' : 'var(--green)' }}>
+            {isPrazo ? `+${fmtBRL(r.melhorPrestacao1 - (r.prestacaoAtual||0))}` : `−${fmtBRL(r.reducaoPrestacao||0)}`}
+          </div>
+        </div>
+        <div className="stat-card card-violet">
+          <div className="stat-label" style={{ color:'#5b2d8c' }}>✨ Economia Total</div>
+          <div className="stat-value" style={{ color:'#2d0f50' }}>{fmtBRL(r.economia)}</div>
+          <div className="stat-sub" style={{ color:'#5b2d8c' }}>{((r.economia/r.semAmort.totalPago)*100).toFixed(1)}% do total pago</div>
+        </div>
+      </div>
+
+      {/* Sem vs Com */}
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }} className="fade-up-2">
+        <div className="card card-red">
+          <h3 className="syne" style={{ fontWeight:700, color:'#6b2820', marginBottom:14, fontSize:14 }}>❌ SEM Amortização</h3>
+          {[['Total pago', r.semAmort.totalPago],['Total juros', r.semAmort.totalJuros],['Correção TR', r.semAmort.totalCorrecao]].map(([l,v])=>(
+            <div key={l} style={{ display:'flex', justifyContent:'space-between', marginBottom:8, fontSize:13 }}>
+              <span style={{ color:'#8a3020' }}>{l}</span>
+              <span style={{ fontFamily:"'DM Mono', monospace", fontWeight:600, color:'#5a1810' }}>{fmtBRL(v)}</span>
+            </div>
+          ))}
+          <div style={{ borderTop:'1px solid #e8c0b8', marginTop:8, paddingTop:8, display:'flex', justifyContent:'space-between', fontSize:13 }}>
+            <span style={{ color:'#8a3020' }}>Prazo</span>
+            <span style={{ fontFamily:"'DM Mono', monospace", fontWeight:600, color:'#5a1810' }}>{r.semAmort.prestacoes.length} meses</span>
+          </div>
+        </div>
+        <div className="card card-green">
+          <h3 className="syne" style={{ fontWeight:700, color:'var(--green)', marginBottom:14, fontSize:14 }}>✅ COM Amortização</h3>
+          {[['Total pago (c/ extra)', r.comAmort.totalPago + r.valorAmortizacao],['Total juros', r.comAmort.totalJuros],['Correção TR', r.comAmort.totalCorrecao]].map(([l,v])=>(
+            <div key={l} style={{ display:'flex', justifyContent:'space-between', marginBottom:8, fontSize:13 }}>
+              <span style={{ color:'#1a5030' }}>{l}</span>
+              <span style={{ fontFamily:"'DM Mono', monospace", fontWeight:600, color:'#0f3d22' }}>{fmtBRL(v)}</span>
+            </div>
+          ))}
+          <div style={{ borderTop:'1px solid #9dd6b9', marginTop:8, paddingTop:8, display:'flex', justifyContent:'space-between', fontSize:13 }}>
+            <span style={{ color:'#1a5030' }}>Prazo</span>
+            <span style={{ fontFamily:"'DM Mono', monospace", fontWeight:600, color:'#0f3d22' }}>{r.melhorPrazo} meses</span>
+          </div>
+        </div>
+      </div>
+
+      <GraficoSaldo saldosSem={r.semAmort.saldos} saldosCom={r.comAmort.saldos} />
+      <CenariosTR saldo={saldo} prazo={prazo} taxaMensal={taxaMensal} admin={admin} seg={seg}
+        valorAmortizacao={valorAmortizacao} modo={modo} prestacaoVar={prestacaoVar} />
+
+      {/* Info */}
+      <div className="notice info fade-up-4">
+        <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
+          <p>1️⃣ <strong>A cada 12 meses</strong> a amortização é recalculada: Saldo ÷ Meses Restantes</p>
+          <p>2️⃣ <strong>Todo mês</strong>, após pagar, o saldo cresce pela TR ({(tr*100).toFixed(6)}%)</p>
+          <p>3️⃣ <strong>Economia em juros:</strong> {fmtBRL(r.semAmort.totalJuros - r.comAmort.totalJuros)}</p>
+          <p>4️⃣ <strong>Economia em correção TR:</strong> {fmtBRL(r.semAmort.totalCorrecao - r.comAmort.totalCorrecao)}</p>
+        </div>
+      </div>
+
+      {/* Tabela */}
+      <div className="card fade-up-4">
+        <h3 className="syne" style={{ fontWeight:700, fontSize:14, letterSpacing:'0.04em', textTransform:'uppercase', marginBottom:16 }}>📋 Primeiras Parcelas COM Amortização</h3>
+        <div style={{ overflowX:'auto' }}>
+          <table className="data-table">
+            <thead>
+              <tr className="ledger-header">
+                {['Mês','Amortização','Juros','Correção TR','Prestação','Saldo'].map(h=>(
+                  <th key={h} style={{ padding:'10px 12px', textAlign: h==='Mês' ? 'left' : 'right' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {r.comAmort.parcelas.map((p,i)=>(
+                <tr key={i} className={p.recalculo ? 'row-recalc' : ''}>
+                  <td>
+                    {p.mes}
+                    {p.recalculo && <span className="badge badge-amber">↺ recálculo</span>}
+                  </td>
+                  <td style={{ color:'var(--green)', fontFamily:"'DM Mono', monospace" }}>{fmtBRL(p.amortizacao)}</td>
+                  <td style={{ color:'#b8520a', fontFamily:"'DM Mono', monospace" }}>{fmtBRL(p.juros)}</td>
+                  <td style={{ color:'var(--red)', fontFamily:"'DM Mono', monospace" }}>{fmtBRL(p.correcao)}</td>
+                  <td style={{ fontWeight:700, fontFamily:"'DM Mono', monospace" }}>{fmtBRL(p.prestacao)}</td>
+                  <td style={{ color:'var(--muted)', fontFamily:"'DM Mono', monospace" }}>{fmtBRL(p.saldo)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <BotoesExport parcelas={r.comAmort.parcelas} nome={nomePDF} resumo={resumoPDF} />
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ABA 1: Simulador SACRE Completo
+// ═══════════════════════════════════════════════════════════════════════════════
+function CalculadoraSACRE() {
+  const [valor,  setValor]  = useState(300000);
+  const [prazo,  setPrazo]  = useState(360);
+  const [juros,  setJuros]  = useState(9.6);
+  const [tr,     setTr]     = useState(0.1255747);
+  const [admin,  setAdmin]  = useState(25);
+  const [seguro, setSeguro] = useState(50);
+  const [tabela, setTabela] = useState(null);
+
+  const calcular = () => {
+    const tm = juros / 100 / 12, trm = tr / 100;
+    let saldo = valor, mr = prazo, amort = valor / prazo;
+    let tA=0, tJ=0, tAd=0, tS=0, tC=0, tP=0;
+    const linhas = [];
+    for (let mes = 1; mes <= prazo; mes++) {
+      if ((mes-1)%12===0 && mes>1) amort = saldo/mr;
+      const j = saldo*tm, p = amort+j+admin+seguro;
+      saldo -= amort;
+      const c = saldo*trm;
+      saldo = saldo*(1+trm); mr--;
+      tA+=amort; tJ+=j; tAd+=admin; tS+=seguro; tC+=c; tP+=p;
+      linhas.push({ mes, amortizacao:amort, juros:j, admin, seguro, correcao:c, prestacao:p,
+        saldoDevedor:Math.max(saldo,0), recalculo:(mes-1)%12===0&&mes>1 });
+    }
+    linhas.push({ mes:'TOTAL', amortizacao:tA, juros:tJ, admin:tAd, seguro:tS, correcao:tC,
+      prestacao:tP, saldoDevedor:0, recalculo:false, isTotal:true });
+    setTabela(linhas);
+  };
+
+  const parcelasExport = tabela ? tabela.filter(l => !l.isTotal).map(l => ({
+    mes: l.mes, amortizacao: l.amortizacao, juros: l.juros,
+    correcao: l.correcao, prestacao: l.prestacao, saldo: l.saldoDevedor,
+  })) : [];
+
+  return (
+    <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
+      <div className="notice warning">
+        <strong>Sistema SACRE — o que é?</strong><br/>
+        A amortização é recalculada a cada 12 meses devido à correção pela TR. Meses com recálculo aparecem destacados na tabela.
+      </div>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))', gap:14 }}>
+        <Campo label="Valor do Financiamento (R$)"       val={valor}  set={setValor}  step="1" />
+        <Campo label="Prazo (meses)"                      val={prazo}  set={setPrazo}  step="1" />
+        <Campo label="Taxa de Juros (% ao ano)"           val={juros}  set={setJuros}  step="0.001" />
+        <Campo label="TR — Taxa Referencial (% ao mês)"   val={tr}     set={setTr}     step="0.000001" hint="Média histórica 2004-2025: 0,1255747%" />
+        <Campo label="Taxa de Administração (R$/mês)"     val={admin}  set={setAdmin}  step="0.01" />
+        <Campo label="Seguro do Financiamento (R$/mês)"   val={seguro} set={setSeguro} step="0.01" />
+      </div>
+      <button className="btn-primary" onClick={calcular}>📊 Calcular Financiamento SACRE</button>
+      {tabela && (
+        <div className="card fade-up">
+          <h2 className="syne" style={{ fontSize:18, fontWeight:700, marginBottom:18 }}>Tabela de Prestações — SACRE</h2>
+          <div style={{ overflowX:'auto' }}>
+            <table className="data-table">
+              <thead>
+                <tr className="ledger-header">
+                  {['Mês','Amortização','Juros','Adm.','Seguro','Correção TR','Prestação Total','Saldo Devedor'].map(h=>(
+                    <th key={h} style={{ padding:'10px 12px', textAlign: h==='Mês' ? 'left' : 'right' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {tabela.map((l,i)=>(
+                  <tr key={i} className={l.isTotal ? 'row-total' : l.recalculo ? 'row-recalc' : ''}>
+                    <td style={{ fontFamily:"'DM Mono', monospace" }}>
+                      {l.mes}
+                      {l.recalculo && <span className="badge badge-amber">↺</span>}
+                    </td>
+                    <td style={{ fontFamily:"'DM Mono', monospace" }}>{fmtBRL(l.amortizacao)}</td>
+                    <td style={{ fontFamily:"'DM Mono', monospace" }}>{fmtBRL(l.juros)}</td>
+                    <td style={{ fontFamily:"'DM Mono', monospace" }}>{fmtBRL(l.admin)}</td>
+                    <td style={{ fontFamily:"'DM Mono', monospace" }}>{fmtBRL(l.seguro)}</td>
+                    <td style={{ fontFamily:"'DM Mono', monospace", color: l.isTotal ? 'inherit' : '#b8520a' }}>{fmtBRL(l.correcao)}</td>
+                    <td style={{ fontFamily:"'DM Mono', monospace", fontWeight:700, color: l.isTotal ? 'inherit' : 'var(--ink)' }}>{fmtBRL(l.prestacao)}</td>
+                    <td style={{ fontFamily:"'DM Mono', monospace", color: l.isTotal ? 'inherit' : 'var(--muted)' }}>{fmtBRL(l.saldoDevedor)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <BotoesExport parcelas={parcelasExport} nome="SACRE_Simulacao_Completa"
+            resumo={[`Financiamento: ${fmtBRL(valor)} — ${prazo} meses — ${juros}% a.a.`]} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ABA 2: Redução de Prazo
+// ═══════════════════════════════════════════════════════════════════════════════
+function ReducaoPrazo() {
+  const [saldo,    setSaldo]    = useState(191000);
+  const [prazo,    setPrazo]    = useState(97);
+  const [juros,    setJuros]    = useState(6.785);
+  const [tr,       setTr]       = useState(0.1255747);
+  const [pmt,      setPmt]      = useState(3155);
+  const [amortE,   setAmortE]   = useState(50000);
+  const [admin,    setAdmin]    = useState(25);
+  const [seguro,   setSeguro]   = useState(50);
+  const [resultado, setResultado] = useState(null);
+
+  const calcular = () => {
+    const tm = juros/12/100, trm = tr/100;
+    const novoSaldo = saldo - amortE;
+    const semAmort  = simularSACRE(saldo, prazo, tm, trm, admin, seguro);
+    const pmtVar    = pmt;
+    let nPrazo = null, nPmt1 = null, comAmort = null;
+    for (let n = prazo; n > 0; n--) {
+      const p = novoSaldo/n + novoSaldo*tm;
+      if (p >= pmtVar) { nPrazo = n; nPmt1 = p; comAmort = simularSACRE(novoSaldo, n, tm, trm, admin, seguro); break; }
+    }
+    if (!nPrazo) {
+      nPrazo = prazo;
+      comAmort = simularSACRE(novoSaldo, prazo, tm, trm, admin, seguro);
+      nPmt1    = comAmort.prestacoes[0] - admin - seguro;
+    }
+    setResultado({
+      semAmort, comAmort, novoSaldo, valorAmortizacao: amortE,
+      melhorPrazo: nPrazo, melhorPrestacao1: nPmt1 + admin + seguro,
+      economia: semAmort.totalPago - (comAmort.totalPago + amortE),
+      mesesReduzidos: prazo - nPrazo, prestacaoAtual: pmt, tr: trm,
+    });
+  };
+
+  return (
+    <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
+      <div className="notice warning">
+        <strong>⚡ Redução de Prazo</strong><br/>
+        A prestação fica ligeiramente maior, mas o financiamento é quitado muito antes.
+        n* = menor prazo onde a 1ª prestação ≥ prestação atual.
+      </div>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))', gap:14 }}>
+        <Campo label="Saldo Devedor Atual (R$)"         val={saldo}  set={setSaldo}  />
+        <Campo label="Prazo Restante (meses)"            val={prazo}  set={setPrazo}  step="1" />
+        <Campo label="Taxa de Juros (% ao ano)"          val={juros}  set={setJuros}  step="0.001" />
+        <Campo label="TR — Taxa Referencial (% ao mês)"  val={tr}     set={setTr}     step="0.000001" hint="Média histórica: 0,1255747%" />
+        <Campo label="Prestação Atual (R$)"              val={pmt}    set={setPmt}    />
+        <Campo label="Taxa Admin (R$/mês)"               val={admin}  set={setAdmin}  step="0.01" />
+        <Campo label="Seguro (R$/mês)"                   val={seguro} set={setSeguro} step="0.01" />
+        <Campo label="💰 Amortização Extraordinária (R$)" val={amortE} set={setAmortE} wide destaque />
+      </div>
+      <button className="btn-primary" onClick={calcular}>⚡ Calcular Redução de Prazo</button>
+      {resultado && (
+        <ResultadoAmortizacao r={resultado} modo="prazo"
+          saldo={saldo} prazo={prazo} taxaMensal={juros/12/100}
+          admin={admin} seg={seguro} valorAmortizacao={amortE}
+          prestacaoVar={pmt} tr={tr/100} />
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ABA 3: Redução da Parcela
+// ═══════════════════════════════════════════════════════════════════════════════
+function ReducaoParcela() {
+  const [saldo,    setSaldo]    = useState(191000);
+  const [prazo,    setPrazo]    = useState(97);
+  const [juros,    setJuros]    = useState(6.785);
+  const [tr,       setTr]       = useState(0.1255747);
+  const [amortE,   setAmortE]   = useState(50000);
+  const [admin,    setAdmin]    = useState(25);
+  const [seguro,   setSeguro]   = useState(50);
+  const [resultado, setResultado] = useState(null);
+
+  const calcular = () => {
+    const tm = juros/12/100, trm = tr/100;
+    const novoSaldo = saldo - amortE;
+    const semAmort  = simularSACRE(saldo, prazo, tm, trm, admin, seguro);
+    const comAmort  = simularSACRE(novoSaldo, prazo, tm, trm, admin, seguro);
+    const novaPmt1  = novoSaldo/prazo + novoSaldo*tm + admin + seguro;
+    const pmtOrig   = semAmort.prestacoes[0];
+    setResultado({
+      semAmort, comAmort, novoSaldo, valorAmortizacao: amortE,
+      melhorPrazo: prazo, melhorPrestacao1: novaPmt1,
+      economia: semAmort.totalPago - (comAmort.totalPago + amortE),
+      mesesReduzidos: 0, reducaoPrestacao: pmtOrig - novaPmt1, tr: trm,
+    });
+  };
+
+  return (
+    <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
+      <div className="notice success">
+        <strong>💸 Redução da Parcela</strong><br/>
+        O prazo permanece igual. A amortização mensal cai proporcionalmente, reduzindo imediatamente cada prestação.
+      </div>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))', gap:14 }}>
+        <Campo label="Saldo Devedor Atual (R$)"         val={saldo}  set={setSaldo}  />
+        <Campo label="Prazo Restante (meses)"            val={prazo}  set={setPrazo}  step="1" />
+        <Campo label="Taxa de Juros (% ao ano)"          val={juros}  set={setJuros}  step="0.001" />
+        <Campo label="TR — Taxa Referencial (% ao mês)"  val={tr}     set={setTr}     step="0.000001" hint="Média histórica: 0,1255747%" />
+        <Campo label="Taxa Admin (R$/mês)"               val={admin}  set={setAdmin}  step="0.01" />
+        <Campo label="Seguro (R$/mês)"                   val={seguro} set={setSeguro} step="0.01" />
+        <Campo label="💰 Amortização Extraordinária (R$)" val={amortE} set={setAmortE} wide destaque />
+      </div>
+      <button className="btn-primary green" onClick={calcular}>💸 Calcular Redução da Parcela</button>
+      {resultado && (
+        <ResultadoAmortizacao r={resultado} modo="parcela"
+          saldo={saldo} prazo={prazo} taxaMensal={juros/12/100}
+          admin={admin} seg={seguro} valorAmortizacao={amortE}
+          prestacaoVar={null} tr={tr/100} />
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ABA 4: Comparação
+// ═══════════════════════════════════════════════════════════════════════════════
+function Comparacao() {
+  const [saldo,    setSaldo]    = useState(191000);
+  const [prazo,    setPrazo]    = useState(97);
+  const [juros,    setJuros]    = useState(6.785);
+  const [tr,       setTr]       = useState(0.1255747);
+  const [pmt,      setPmt]      = useState(3155);
+  const [amortE,   setAmortE]   = useState(50000);
+  const [admin,    setAdmin]    = useState(25);
+  const [seguro,   setSeguro]   = useState(50);
+  const [res,      setRes]      = useState(null);
+
+  const calcular = () => {
+    const tm = juros/12/100, trm = tr/100;
+    const novoSaldo = saldo - amortE;
+    const semAmort  = simularSACRE(saldo, prazo, tm, trm, admin, seguro);
+    let nPrazo = null, nPmt1p = null, comPrazo = null;
+    for (let n = prazo; n > 0; n--) {
+      const p = novoSaldo/n + novoSaldo*tm;
+      if (p >= pmt) { nPrazo = n; nPmt1p = p; comPrazo = simularSACRE(novoSaldo, n, tm, trm, admin, seguro); break; }
+    }
+    if (!nPrazo) { nPrazo = prazo; comPrazo = simularSACRE(novoSaldo, prazo, tm, trm, admin, seguro); nPmt1p = comPrazo.prestacoes[0]-admin-seguro; }
+    const comParcela = simularSACRE(novoSaldo, prazo, tm, trm, admin, seguro);
+    const novaPmt1   = novoSaldo/prazo + novoSaldo*tm + admin + seguro;
+    setRes({
+      semAmort,
+      prazo: { com: comPrazo, nPrazo, nPmt1: nPmt1p+admin+seguro, economia: semAmort.totalPago-(comPrazo.totalPago+amortE), mesesReduzidos: prazo-nPrazo },
+      parcela: { com: comParcela, nPmt1: novaPmt1, economia: semAmort.totalPago-(comParcela.totalPago+amortE), reducao: semAmort.prestacoes[0]-novaPmt1 },
+      novoSaldo,
+    });
+  };
+
+  const Coluna = ({ titulo, dados, tipo, bgClass }) => (
+    <div className={`card ${bgClass}`} style={{ fontSize:13 }}>
+      <h3 className="syne" style={{ fontWeight:700, fontSize:15, marginBottom:16 }}>{titulo}</h3>
+      <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+        <div style={{ display:'flex', justifyContent:'space-between' }}><span style={{ opacity:.75 }}>Novo saldo:</span><span style={{ fontFamily:"'DM Mono', monospace", fontWeight:600 }}>{fmtBRL(res.novoSaldo)}</span></div>
+        <div style={{ display:'flex', justifyContent:'space-between' }}><span style={{ opacity:.75 }}>Novo prazo:</span><span style={{ fontFamily:"'DM Mono', monospace", fontWeight:600 }}>{tipo==='prazo'?`${dados.nPrazo}m (−${dados.mesesReduzidos})`:`${prazo}m (inalterado)`}</span></div>
+        <div style={{ display:'flex', justifyContent:'space-between' }}><span style={{ opacity:.75 }}>1ª prestação:</span><span style={{ fontFamily:"'DM Mono', monospace", fontWeight:600 }}>{fmtBRL(dados.nPmt1)}</span></div>
+        <div style={{ display:'flex', justifyContent:'space-between' }}>
+          <span style={{ opacity:.75 }}>{tipo==='prazo'?'Var. prestação:':'Red. prestação:'}</span>
+          <span style={{ fontFamily:"'DM Mono', monospace", fontWeight:600 }}>{tipo==='prazo'?`+${fmtBRL(dados.nPmt1-pmt)}`:`−${fmtBRL(dados.reducao)}`}</span>
+        </div>
+        <div style={{ borderTop:'1px solid rgba(0,0,0,0.1)', paddingTop:10, marginTop:4, display:'flex', flexDirection:'column', gap:8 }}>
+          <div style={{ display:'flex', justifyContent:'space-between' }}><span style={{ opacity:.75 }}>Total juros:</span><span style={{ fontFamily:"'DM Mono', monospace" }}>{fmtBRL(dados.com.totalJuros)}</span></div>
+          <div style={{ display:'flex', justifyContent:'space-between' }}><span style={{ opacity:.75 }}>Total TR:</span><span style={{ fontFamily:"'DM Mono', monospace" }}>{fmtBRL(dados.com.totalCorrecao)}</span></div>
+        </div>
+        <div style={{ borderTop:'1px solid rgba(0,0,0,0.1)', paddingTop:10, marginTop:4, display:'flex', justifyContent:'space-between', fontSize:16 }}>
+          <span style={{ fontFamily:"'Syne', sans-serif", fontWeight:700 }}>Economia:</span>
+          <span style={{ fontFamily:"'DM Mono', monospace", fontWeight:700 }}>{fmtBRL(dados.economia)}</span>
+        </div>
+        <div style={{ display:'flex', justifyContent:'space-between', fontSize:11, opacity:.7 }}>
+          <span>% do total sem amort.:</span>
+          <span style={{ fontFamily:"'DM Mono', monospace" }}>{((dados.economia/res.semAmort.totalPago)*100).toFixed(1)}%</span>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
+      <div className="notice info">
+        <strong>⚖️ Comparação lado a lado</strong><br/>
+        Insira os dados uma única vez e compare imediatamente as duas modalidades de amortização.
+      </div>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))', gap:14 }}>
+        <Campo label="Saldo Devedor Atual (R$)"         val={saldo}  set={setSaldo}  />
+        <Campo label="Prazo Restante (meses)"            val={prazo}  set={setPrazo}  step="1" />
+        <Campo label="Taxa de Juros (% ao ano)"          val={juros}  set={setJuros}  step="0.001" />
+        <Campo label="TR — Taxa Referencial (% ao mês)"  val={tr}     set={setTr}     step="0.000001" hint="Média histórica: 0,1255747%" />
+        <Campo label="Prestação Atual (R$)"              val={pmt}    set={setPmt}    />
+        <Campo label="Taxa Admin (R$/mês)"               val={admin}  set={setAdmin}  step="0.01" />
+        <Campo label="Seguro (R$/mês)"                   val={seguro} set={setSeguro} step="0.01" />
+        <Campo label="💰 Amortização Extraordinária (R$)" val={amortE} set={setAmortE} wide destaque />
+      </div>
+      <button className="btn-primary" onClick={calcular}>⚖️ Comparar Modalidades</button>
+      {res && (
+        <div style={{ display:'flex', flexDirection:'column', gap:20 }} className="fade-up">
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+            <Coluna titulo="⚡ Redução de Prazo"   dados={res.prazo}   tipo="prazo"   bgClass="card-gold" />
+            <Coluna titulo="💸 Redução da Parcela" dados={res.parcela} tipo="parcela" bgClass="card-green" />
+          </div>
+          <GraficoSaldo saldosSem={res.semAmort.saldos} saldosCom={res.prazo.com.saldos} labelCom="Redução de Prazo" />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ABA 5: Amortizações Múltiplas
+// ═══════════════════════════════════════════════════════════════════════════════
+function AmortizacoesMultiplas() {
+  const [saldo,    setSaldo]    = useState(191000);
+  const [prazo,    setPrazo]    = useState(97);
+  const [juros,    setJuros]    = useState(6.785);
+  const [tr,       setTr]       = useState(0.1255747);
+  const [admin,    setAdmin]    = useState(25);
+  const [seguro,   setSeguro]   = useState(50);
+  const [eventos,  setEventos]  = useState([{ mes: 12, valor: 10000 }, { mes: 24, valor: 10000 }]);
+  const [resultado, setResultado] = useState(null);
+
+  const addEvento  = () => setEventos(e => [...e, { mes: Math.min((e[e.length-1]?.mes||0)+12, prazo), valor: 10000 }]);
+  const remEvento  = i  => setEventos(e => e.filter((_,j)=>j!==i));
+  const setEvento  = (i, campo, val) => setEventos(e => e.map((ev,j)=>j===i?{...ev,[campo]:val}:ev));
+
+  const calcular = () => {
+    const tm = juros/12/100, trm = tr/100;
+    const extras = eventos.map(e=>({mes:e.mes, valor:e.valor}));
+    const totalExtras = extras.reduce((a,e)=>a+e.valor, 0);
+    const semAmort = simularSACRE(saldo, prazo, tm, trm, admin, seguro);
+    const comAmort = simularSACRE(saldo, prazo, tm, trm, admin, seguro, extras);
+    setResultado({ semAmort, comAmort, economia: semAmort.totalPago - (comAmort.totalPago + totalExtras), totalExtras, tr: trm });
+  };
+
+  return (
+    <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
+      <div className="notice violet">
+        <strong>🔄 Amortizações Múltiplas</strong><br/>
+        Simule o impacto de várias amortizações extraordinárias ao longo do financiamento (ex.: usar 13º salário todo dezembro).
+      </div>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))', gap:14 }}>
+        <Campo label="Saldo Devedor Atual (R$)"         val={saldo}  set={setSaldo}  />
+        <Campo label="Prazo Total (meses)"               val={prazo}  set={setPrazo}  step="1" />
+        <Campo label="Taxa de Juros (% ao ano)"          val={juros}  set={setJuros}  step="0.001" />
+        <Campo label="TR — Taxa Referencial (% ao mês)"  val={tr}     set={setTr}     step="0.000001" hint="Média histórica: 0,1255747%" />
+        <Campo label="Taxa Admin (R$/mês)"               val={admin}  set={setAdmin}  step="0.01" />
+        <Campo label="Seguro (R$/mês)"                   val={seguro} set={setSeguro} step="0.01" />
+      </div>
+
+      <div className="card">
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+          <h3 className="syne" style={{ fontWeight:700, fontSize:14, letterSpacing:'0.04em', textTransform:'uppercase' }}>📅 Eventos de Amortização</h3>
+          <button onClick={addEvento} style={{
+            padding:'8px 16px', background:'#5b2d8c', color:'white',
+            fontFamily:"'Syne', sans-serif", fontSize:12, fontWeight:700,
+            letterSpacing:'0.04em', border:'none', borderRadius:8, cursor:'pointer'
+          }}>+ Adicionar</button>
+        </div>
+        {eventos.length === 0 && (
+          <p style={{ color:'var(--muted)', textAlign:'center', padding:'20px 0', fontSize:13 }}>Nenhum evento. Clique em "+ Adicionar" para começar.</p>
+        )}
+        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+          {eventos.map((ev, i) => (
+            <div key={i} className="event-row">
+              <div style={{ flex:1 }}>
+                <label className="field-label">Mês</label>
+                <input type="number" min="1" max={prazo} value={ev.mes}
+                  onChange={e=>setEvento(i,'mes',Number(e.target.value))}
+                  className="field-input" />
+              </div>
+              <div style={{ flex:2 }}>
+                <label className="field-label">Valor (R$)</label>
+                <input type="number" step="100" value={ev.valor}
+                  onChange={e=>setEvento(i,'valor',Number(e.target.value))}
+                  className="field-input" />
+              </div>
+              <button onClick={()=>remEvento(i)} style={{
+                padding:'10px 14px', background:'#fde8e8', color:'var(--red)',
+                border:'none', borderRadius:8, cursor:'pointer', fontWeight:700, fontSize:16
+              }}>✕</button>
+            </div>
+          ))}
+        </div>
+        {eventos.length > 0 && (
+          <p style={{ fontSize:12, color:'var(--muted)', marginTop:12, fontFamily:"'DM Mono', monospace" }}>
+            Total: <strong>{fmtBRL(eventos.reduce((a,e)=>a+e.valor,0))}</strong> em {eventos.length} evento{eventos.length>1?'s':''}
+          </p>
+        )}
+      </div>
+
+      <button className="btn-primary violet" onClick={calcular} disabled={eventos.length===0}
+        style={{ opacity: eventos.length===0 ? 0.4 : 1 }}>
+        🔄 Simular Amortizações Múltiplas
+      </button>
+
+      {resultado && (
+        <div style={{ display:'flex', flexDirection:'column', gap:20 }} className="fade-up">
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))', gap:14 }}>
+            <div className="stat-card card-violet">
+              <div className="stat-label" style={{ color:'#5b2d8c' }}>💸 Total Amortizado</div>
+              <div className="stat-value" style={{ color:'#2d0f50' }}>{fmtBRL(resultado.totalExtras)}</div>
+              <div className="stat-sub" style={{ color:'#5b2d8c' }}>{eventos.length} evento{eventos.length>1?'s':''}</div>
+            </div>
+            <div className="stat-card card-green">
+              <div className="stat-label" style={{ color:'var(--green)' }}>✨ Economia Total</div>
+              <div className="stat-value" style={{ color:'#0f3d22' }}>{fmtBRL(resultado.economia)}</div>
+              <div className="stat-sub" style={{ color:'var(--green)' }}>{((resultado.economia/resultado.semAmort.totalPago)*100).toFixed(1)}% do total</div>
+            </div>
+            <div className="stat-card card-blue">
+              <div className="stat-label" style={{ color:'var(--blue)' }}>📉 Redução Juros + TR</div>
+              <div className="stat-value" style={{ color:'#0f1f3d' }}>{fmtBRL((resultado.semAmort.totalJuros+resultado.semAmort.totalCorrecao)-(resultado.comAmort.totalJuros+resultado.comAmort.totalCorrecao))}</div>
+              <div className="stat-sub" style={{ color:'var(--blue)' }}>juros + correção monetária</div>
+            </div>
+          </div>
+
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+            <div className="card card-red" style={{ fontSize:13 }}>
+              <h3 className="syne" style={{ fontWeight:700, color:'#6b2820', marginBottom:12, fontSize:14 }}>❌ SEM amortizações</h3>
+              {[['Total pago',resultado.semAmort.totalPago],['Total juros',resultado.semAmort.totalJuros],['Total TR',resultado.semAmort.totalCorrecao],['Prazo',`${resultado.semAmort.prestacoes.length} meses`]].map(([l,v])=>(
+                <div key={l} style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
+                  <span style={{ color:'#8a3020' }}>{l}:</span>
+                  <span style={{ fontFamily:"'DM Mono', monospace", fontWeight:600, color:'#5a1810' }}>{typeof v==='string'?v:fmtBRL(v)}</span>
+                </div>
+              ))}
+            </div>
+            <div className="card card-green" style={{ fontSize:13 }}>
+              <h3 className="syne" style={{ fontWeight:700, color:'var(--green)', marginBottom:12, fontSize:14 }}>✅ COM amortizações</h3>
+              {[['Total pago (c/ extras)',resultado.comAmort.totalPago+resultado.totalExtras],['Total juros',resultado.comAmort.totalJuros],['Total TR',resultado.comAmort.totalCorrecao],['Prazo efetivo',`${resultado.comAmort.prestacoes.length} meses`]].map(([l,v])=>(
+                <div key={l} style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
+                  <span style={{ color:'#1a5030' }}>{l}:</span>
+                  <span style={{ fontFamily:"'DM Mono', monospace", fontWeight:600, color:'#0f3d22' }}>{typeof v==='string'?v:fmtBRL(v)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <GraficoSaldo saldosSem={resultado.semAmort.saldos} saldosCom={resultado.comAmort.saldos} labelCom="Com amortizações múltiplas" />
+
+          <div className="card">
+            <h3 className="syne" style={{ fontWeight:700, fontSize:14, letterSpacing:'0.04em', textTransform:'uppercase', marginBottom:16 }}>📋 Parcelas COM amortizações (meses relevantes)</h3>
+            <div style={{ overflowX:'auto' }}>
+              <table className="data-table">
+                <thead>
+                  <tr className="ledger-header">
+                    {['Mês','Amort. Extra','Amortização','Juros','Correção TR','Prestação','Saldo'].map(h=>(
+                      <th key={h} style={{ padding:'10px 12px', textAlign: h==='Mês' ? 'left' : 'right' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {resultado.comAmort.parcelas.map((p,i)=>(
+                    <tr key={i} className={p.extra ? 'row-extra' : p.recalculo ? 'row-recalc' : ''}>
+                      <td>
+                        {p.mes}
+                        {p.extra>0 && <span className="badge badge-violet">💰 extra</span>}
+                        {p.recalculo && <span className="badge badge-amber">↺</span>}
+                      </td>
+                      <td style={{ fontFamily:"'DM Mono', monospace", fontWeight:700, color:'#5b2d8c' }}>{p.extra>0?fmtBRL(p.extra):'—'}</td>
+                      <td style={{ fontFamily:"'DM Mono', monospace", color:'var(--green)' }}>{fmtBRL(p.amortizacao)}</td>
+                      <td style={{ fontFamily:"'DM Mono', monospace", color:'#b8520a' }}>{fmtBRL(p.juros)}</td>
+                      <td style={{ fontFamily:"'DM Mono', monospace", color:'var(--red)' }}>{fmtBRL(p.correcao)}</td>
+                      <td style={{ fontFamily:"'DM Mono', monospace", fontWeight:700 }}>{fmtBRL(p.prestacao)}</td>
+                      <td style={{ fontFamily:"'DM Mono', monospace", color:'var(--muted)' }}>{fmtBRL(p.saldo)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <BotoesExport parcelas={resultado.comAmort.parcelas} nome="SACRE_Amortizacoes_Multiplas"
+              resumo={[`Total amortizado: ${fmtBRL(resultado.totalExtras)}   Economia: ${fmtBRL(resultado.economia)}`]} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// APP PRINCIPAL
+// ═══════════════════════════════════════════════════════════════════════════════
+function App() {
+  const [aba, setAba] = useState('sacre');
+  const abas = [
+    { id:'sacre',    label:'📊 Simulador SACRE' },
+    { id:'prazo',    label:'⚡ Redução de Prazo' },
+    { id:'parcela',  label:'💸 Redução da Parcela' },
+    { id:'comp',     label:'⚖️ Comparação' },
+    { id:'multiplas',label:'🔄 Múltiplas Amortizações' },
+  ];
+
+  return (
+    <div style={{ minHeight:'100vh', background:'var(--paper)', padding:'24px 16px' }}>
+      <div style={{ maxWidth:960, margin:'0 auto' }}>
+        <div style={{ background:'white', borderRadius:16, boxShadow:'0 4px 40px rgba(0,0,0,0.08)', border:'1.5px solid var(--border)', padding:'28px 32px' }}>
+
+          {/* Header */}
+          <div style={{ display:'flex', alignItems:'center', gap:14, marginBottom:8 }}>
+            <div className="logomark">S</div>
+            <div>
+              <h1 className="syne" style={{ fontSize:22, fontWeight:800, letterSpacing:'-0.5px', color:'var(--ink)', margin:0 }}>
+                Calculadora de Financiamento Imobiliário
+              </h1>
+              <p style={{ fontSize:12, color:'var(--muted)', margin:0, fontFamily:"'DM Mono', monospace" }}>Sistema SACRE — Caixa Econômica Federal</p>
+            </div>
+          </div>
+
+          <div className="ornament" style={{ margin:'16px 0' }}>SACRE · Sistema de Amortização Crescente</div>
+
+          <div className="notice danger" style={{ marginBottom:20 }}>
+            <strong>⚠️ A Grande Ilusão dos Bancos</strong><br/>
+            Seu financiamento NÃO é SAC puro! É <strong>SACRE</strong> — a TR corrige o saldo mensalmente, fazendo-o crescer e anulando parte da amortização. Por isso a amortização extraordinária é tão importante.
+          </div>
+
+          {/* Tabs */}
+          <div style={{ display:'flex', gap:4, marginBottom:0, borderBottom:'2px solid var(--border)', overflowX:'auto', paddingBottom:0 }}>
+            {abas.map(({id, label}) => (
+              <button key={id} className={`tab-btn${aba===id?' active':''}`} onClick={() => setAba(id)}>{label}</button>
+            ))}
+          </div>
+
+          <div style={{ paddingTop:24 }}>
+            {aba === 'sacre'     && <CalculadoraSACRE />}
+            {aba === 'prazo'     && <ReducaoPrazo />}
+            {aba === 'parcela'   && <ReducaoParcela />}
+            {aba === 'comp'      && <Comparacao />}
+            {aba === 'multiplas' && <AmortizacoesMultiplas />}
+          </div>
+        </div>
+
+        <p style={{ textAlign:'center', marginTop:16, fontSize:11, color:'var(--muted)', fontFamily:"'DM Mono', monospace" }}>
+          Simulação educacional · Consulte sempre um especialista financeiro
+        </p>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.render(<App />, document.getElementById('root'));
+</script>
+</body>
+</html>
